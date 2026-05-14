@@ -1,7 +1,6 @@
 package server
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"strings"
@@ -9,6 +8,7 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt/v5"
+	"github.com/octavioturra/secure-slot/backend/internal/auth"
 	"github.com/octavioturra/secure-slot/backend/pkg/response"
 	"golang.org/x/time/rate"
 )
@@ -90,23 +90,21 @@ func (m *RateLimiterMiddleware) Handler(next http.Handler) http.Handler {
 	})
 }
 
-type contextKey string
-
-const claimsKey contextKey = "claims"
-
-var publicPrefixes = []string{
+// publicRoutes are exact paths that do not require JWT authentication.
+// Passkey endpoints (/api/v1/auth/passkey/*) require JWT and are intentionally excluded.
+var publicRoutes = []string{
 	"/health",
-	"/api/v1/auth/",
+	"/api/v1/auth/login",
+	"/api/v1/auth/callback",
 }
 
 func isPublicRoute(path string) bool {
-	for _, prefix := range publicPrefixes {
-		if strings.HasPrefix(path, prefix) {
+	for _, route := range publicRoutes {
+		if path == route {
 			return true
 		}
 	}
 	// OTP and submit endpoints are public (Nicoly flow)
-	// Pattern: /api/v1/slots/{id}/otp  and  /api/v1/slots/{id}/submit
 	if strings.HasSuffix(path, "/otp") || strings.HasSuffix(path, "/submit") {
 		return true
 	}
@@ -128,7 +126,8 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 			}
 			tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
-			token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
+			var claims auth.Claims
+			token, err := jwt.ParseWithClaims(tokenStr, &claims, func(t *jwt.Token) (any, error) {
 				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
 					return nil, jwt.ErrSignatureInvalid
 				}
@@ -139,14 +138,8 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), claimsKey, token.Claims)
+			ctx := auth.WithClaims(r.Context(), &claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-// ClaimsFromContext retrieves JWT claims from a request context.
-func ClaimsFromContext(ctx context.Context) (jwt.Claims, bool) {
-	c, ok := ctx.Value(claimsKey).(jwt.Claims)
-	return c, ok
 }

@@ -35,6 +35,8 @@ type Config struct {
 	SlotDefaultTTLHours int
 	MaxPayloadBytes     int64
 
+	AppURL string
+
 	Port string
 	Env  string
 }
@@ -93,6 +95,7 @@ func Load() (*Config, error) {
 		SMTPPass:             optional("SMTP_PASS", ""),
 		SlotDefaultTTLHours:  optionalInt("SLOT_DEFAULT_TTL_HOURS", 72),
 		MaxPayloadBytes:      int64(optionalInt("MAX_PAYLOAD_BYTES", 10485760)),
+		AppURL:               optional("APP_URL", "http://localhost:3000"),
 		Port:                 require("PORT"),
 		Env:                  optional("ENV", "development"),
 	}
