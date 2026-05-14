@@ -1,0 +1,62 @@
+{
+  "realm": "secureslot",
+  "enabled": true,
+  "sslRequired": "external",
+  "registrationAllowed": false,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "accessTokenLifespan": 900,
+  "clients": [
+    {
+      "clientId": "secureslot-backend",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "dev-backend-secret",
+      "redirectUris": ["http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:3000"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "protocol": "openid-connect"
+    },
+    {
+      "clientId": "secureslot-frontend",
+      "enabled": true,
+      "publicClient": true,
+      "redirectUris": ["http://localhost:5173/*", "http://localhost:3000/*"],
+      "webOrigins": ["http://localhost:5173", "http://localhost:3000"],
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "attributes": {
+        "pkce.code.challenge.method": "S256"
+      },
+      "protocol": "openid-connect"
+    }
+  ],
+  "users": [
+    {
+      "username": "sergio",
+      "email": "sergio@bps.com.br",
+      "enabled": true,
+      "emailVerified": true,
+      "firstName": "Sérgio",
+      "lastName": "BPS",
+      "credentials": [{ "type": "password", "value": "dev123", "temporary": false }],
+      "attributes": { "hd": ["bps.com.br"] }
+    }
+  ],
+  "identityProviders": [
+    {
+      "alias": "google",
+      "displayName": "Google",
+      "providerId": "google",
+      "enabled": false,
+      "config": {
+        "clientId": "COLOQUE_SEU_GOOGLE_CLIENT_ID",
+        "clientSecret": "COLOQUE_SEU_GOOGLE_CLIENT_SECRET",
+        "hostedDomain": "bps.com.br",
+        "syncMode": "IMPORT"
+      }
+    }
+  ]
+}
