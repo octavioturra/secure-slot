@@ -1,14 +1,13 @@
 package server
 
 import (
-	"context"
 	"net"
 	"net/http"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/octavioturra/secure-slot/backend/internal/auth"
 	"github.com/octavioturra/secure-slot/backend/pkg/response"
 	"golang.org/x/time/rate"
 )
@@ -90,30 +89,26 @@ func (m *RateLimiterMiddleware) Handler(next http.Handler) http.Handler {
 	})
 }
 
-type contextKey string
-
-const claimsKey contextKey = "claims"
-
-var publicPrefixes = []string{
+var publicRoutes = []string{
 	"/health",
-	"/api/v1/auth/",
+	"/api/v1/auth/login",
+	"/api/v1/auth/callback",
 }
 
 func isPublicRoute(path string) bool {
-	for _, prefix := range publicPrefixes {
-		if strings.HasPrefix(path, prefix) {
+	for _, route := range publicRoutes {
+		if path == route {
 			return true
 		}
 	}
 	// OTP and submit endpoints are public (Nicoly flow)
-	// Pattern: /api/v1/slots/{id}/otp  and  /api/v1/slots/{id}/submit
 	if strings.HasSuffix(path, "/otp") || strings.HasSuffix(path, "/submit") {
 		return true
 	}
 	return false
 }
 
-func JWTAuth(secret string) func(http.Handler) http.Handler {
+func JWTAuth(jwtSvc *auth.JWTService) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if isPublicRoute(r.URL.Path) {
@@ -128,25 +123,14 @@ func JWTAuth(secret string) func(http.Handler) http.Handler {
 			}
 			tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
 
-			token, err := jwt.Parse(tokenStr, func(t *jwt.Token) (any, error) {
-				if _, ok := t.Method.(*jwt.SigningMethodHMAC); !ok {
-					return nil, jwt.ErrSignatureInvalid
-				}
-				return []byte(secret), nil
-			}, jwt.WithExpirationRequired())
-			if err != nil || !token.Valid {
+			claims, err := jwtSvc.Validate(tokenStr)
+			if err != nil {
 				response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid or expired token")
 				return
 			}
 
-			ctx := context.WithValue(r.Context(), claimsKey, token.Claims)
+			ctx := auth.WithClaims(r.Context(), claims)
 			next.ServeHTTP(w, r.WithContext(ctx))
 		})
 	}
-}
-
-// ClaimsFromContext retrieves JWT claims from a request context.
-func ClaimsFromContext(ctx context.Context) (jwt.Claims, bool) {
-	c, ok := ctx.Value(claimsKey).(jwt.Claims)
-	return c, ok
 }
