@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"strconv"
+
+	"github.com/joho/godotenv"
 )
 
 type Config struct {
@@ -38,6 +40,9 @@ type Config struct {
 }
 
 func Load() (*Config, error) {
+	// Carrega .env se existir — ignorado silenciosamente em prod onde as vars já estão no ambiente
+	_ = godotenv.Load()
+
 	var errs []error
 
 	require := func(key string) string {
