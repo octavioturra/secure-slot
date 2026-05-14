@@ -1,4 +1,5 @@
-.PHONY: infra-up infra-down infra-seed backend-dev frontend-dev test migrate-up migrate-down lint
+.PHONY: infra-up infra-down infra-seed backend-dev frontend-dev test migrate-up migrate-down lint \
+        ensure-air ensure-migrate ensure-golangci-lint
 
 # Infra local
 infra-up:
@@ -17,21 +18,31 @@ infra-reset:
 	docker compose -f infra/docker-compose.yml down -v
 	docker compose -f infra/docker-compose.yml up -d
 
+# Ferramentas — instalam automaticamente se não estiverem no PATH
+ensure-air:
+	@command -v air > /dev/null 2>&1 || (echo "Instalando air..." && go install github.com/air-verse/air@latest)
+
+ensure-migrate:
+	@command -v migrate > /dev/null 2>&1 || (echo "Instalando migrate..." && go install -tags 'postgres' github.com/golang-migrate/migrate/v4/cmd/migrate@latest)
+
+ensure-golangci-lint:
+	@command -v golangci-lint > /dev/null 2>&1 || (echo "Instalando golangci-lint..." && go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest)
+
 # Backend
-backend-dev:
+backend-dev: ensure-air
 	cd backend && air -c .air.toml
 
 backend-build:
 	cd backend && go build -o bin/server ./cmd/server
 
 # Migrations
-migrate-up:
+migrate-up: ensure-migrate
 	cd backend && migrate -path migrations -database "$$DATABASE_URL" up
 
-migrate-down:
+migrate-down: ensure-migrate
 	cd backend && migrate -path migrations -database "$$DATABASE_URL" down 1
 
-migrate-new:
+migrate-new: ensure-migrate
 	@read -p "Nome da migration: " name; \
 	cd backend && migrate create -ext sql -dir migrations -seq $$name
 
@@ -49,7 +60,7 @@ test:
 test-integration:
 	cd backend && go test -tags integration ./...
 
-lint:
+lint: ensure-golangci-lint
 	cd backend && golangci-lint run
 	cd frontend && npm run lint
 
