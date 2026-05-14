@@ -1,0 +1,22 @@
+root = "."
+tmp_dir = "tmp"
+
+[build]
+  cmd = "go build -o ./tmp/main ./cmd/server"
+  bin = "./tmp/main"
+  include_ext = ["go"]
+  exclude_dir = ["tmp", "migrations", "vendor"]
+  watch_dir = ["cmd", "internal", "pkg"]
+  delay = 1000
+  kill_delay = "500ms"
+  rerun_delay = 500
+  send_interrupt = true
+
+[log]
+  time = true
+
+[color]
+  main = "magenta"
+  watcher = "cyan"
+  build = "yellow"
+  runner = "green"
