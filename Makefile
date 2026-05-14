@@ -54,10 +54,10 @@ backend-build: ensure-go
 
 # Migrations
 migrate-up: ensure-migrate
-	cd backend && migrate -path migrations -database "$$DATABASE_URL" up
+	cd backend && set -a; . ./.env 2>/dev/null; set +a; migrate -path migrations -database "$$DATABASE_URL" up
 
 migrate-down: ensure-migrate
-	cd backend && migrate -path migrations -database "$$DATABASE_URL" down 1
+	cd backend && set -a; . ./.env 2>/dev/null; set +a; migrate -path migrations -database "$$DATABASE_URL" down 1
 
 migrate-new: ensure-migrate
 	@read -p "Nome da migration: " name; \

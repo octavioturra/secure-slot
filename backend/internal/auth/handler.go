@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/redis/go-redis/v9"
 	"github.com/octavioturra/secure-slot/backend/pkg/response"
+	"github.com/redis/go-redis/v9"
 )
 
 type Handler struct {
@@ -82,18 +82,11 @@ func (h *Handler) Callback(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// Refresh validates the current Bearer token and issues a fresh one.
+// Refresh issues a fresh JWT for the already-authenticated user (claims come from the JWT middleware).
 func (h *Handler) Refresh(w http.ResponseWriter, r *http.Request) {
-	authHeader := r.Header.Get("Authorization")
-	if !strings.HasPrefix(authHeader, "Bearer ") {
-		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing authorization header")
-		return
-	}
-	tokenStr := strings.TrimPrefix(authHeader, "Bearer ")
-
-	claims, err := h.jwt.Validate(tokenStr)
-	if err != nil {
-		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "invalid or expired token")
+	claims, ok := ClaimsFromContext(r.Context())
+	if !ok {
+		response.Error(w, http.StatusUnauthorized, "UNAUTHORIZED", "missing claims")
 		return
 	}
 

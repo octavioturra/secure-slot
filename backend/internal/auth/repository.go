@@ -37,10 +37,14 @@ func (r *PostgresUserRepository) Upsert(ctx context.Context, email, domain, disp
 		RETURNING id, email, domain, display_name, created_at, last_login_at`
 
 	var u User
+	var dn *string
 	err := r.pool.QueryRow(ctx, q, email, domain, displayName).
-		Scan(&u.ID, &u.Email, &u.Domain, &u.DisplayName, &u.CreatedAt, &u.LastLoginAt)
+		Scan(&u.ID, &u.Email, &u.Domain, &dn, &u.CreatedAt, &u.LastLoginAt)
 	if err != nil {
 		return nil, fmt.Errorf("upsert user: %w", err)
+	}
+	if dn != nil {
+		u.DisplayName = *dn
 	}
 	return &u, nil
 }
@@ -49,10 +53,14 @@ func (r *PostgresUserRepository) GetByID(ctx context.Context, id uuid.UUID) (*Us
 	const q = `SELECT id, email, domain, display_name, created_at, last_login_at FROM users WHERE id = $1`
 
 	var u User
+	var dn *string
 	err := r.pool.QueryRow(ctx, q, id).
-		Scan(&u.ID, &u.Email, &u.Domain, &u.DisplayName, &u.CreatedAt, &u.LastLoginAt)
+		Scan(&u.ID, &u.Email, &u.Domain, &dn, &u.CreatedAt, &u.LastLoginAt)
 	if err != nil {
 		return nil, fmt.Errorf("get user: %w", err)
+	}
+	if dn != nil {
+		u.DisplayName = *dn
 	}
 	return &u, nil
 }
