@@ -1,0 +1,4 @@
+DROP TABLE IF EXISTS audit_log;
+DROP TABLE IF EXISTS slots;
+DROP TABLE IF EXISTS passkey_credentials;
+DROP TABLE IF EXISTS users;
